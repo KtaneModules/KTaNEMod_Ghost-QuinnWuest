@@ -14,11 +14,10 @@ MonoBehaviour:
   id: GhostModule
   title: Ghost
   author: Quinn Wuest
-  description: 'What did I tell you about treating your retro bossfights with respect?
-    Now they''re on our bo... aww, this green blob guy looks kinda cute. :)
-
-
-    Made by Quinn Wuest'
+  description: "What did I tell you about treating your retro bossfights with respect?
+    Now they're on our bo... aww, this green blob guy looks kinda cute. :)\r\n\r\nMade
+    by Quinn Wuest\r\n\r\n[url=https://ktane.timwi.de/HTML/Ghost.html]Manual HTML[/url]\r\n[url=https://ktane.timwi.de/PDF/Ghost.pdf]Manual
+    PDF[/url]"
   version: 1.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 172cee344b63de242b6608fa8f797508, type: 3}

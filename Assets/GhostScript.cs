@@ -28,7 +28,6 @@ public class GhostScript : MonoBehaviour
     private static int _ghostIdCounter = 1;
     private bool _moduleSolved;
     private float defaultGameMusicVolume;
-    private bool TwitchPlaysActive;
     private bool _twitchMode;
     private IDictionary<string, object> tpAPI;
 
@@ -46,7 +45,7 @@ public class GhostScript : MonoBehaviour
     private bool _isLargeHit;
     private int _largeHitCount;
     private bool _canPressLarge = true;
-    private bool[] _largePressRules = new bool[4];
+    private readonly bool[] _largePressRules = new bool[4];
     private bool _canAttack;
     private bool _canPressInAutosolver = true;
 
@@ -60,8 +59,8 @@ public class GhostScript : MonoBehaviour
     public Material MediumHitMat;
     public Material MediumHitEyesMat;
 
-    private bool[] _isMediumHit = new bool[4];
-    private bool[] _canPressMedium = new bool[4] { true, true, true, true };
+    private readonly bool[] _isMediumHit = new bool[4];
+    private readonly bool[] _canPressMedium = new bool[4] { true, true, true, true };
 
     // Small Ghost
     public GameObject[] GhostSmallParent;
@@ -69,7 +68,7 @@ public class GhostScript : MonoBehaviour
     public GameObject[] GhostSmallShell;
     public GameObject[] GhostSmallIndivParent;
     public KMSelectable[] GhostSmallSel;
-    private bool[] _canPressSmall = new bool[16] { true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
+    private readonly bool[] _canPressSmall = new bool[16] { true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
 
     // Everything else
     private int _bombTimeSeconds;
@@ -93,9 +92,9 @@ public class GhostScript : MonoBehaviour
     private Coroutine _moveSpike;
     private int _ledPosition = 0;
     private int[] _snCharacters = new int[6];
-    private int[] _codeSets = new int[4];
+    private readonly int[] _codeSets = new int[4];
     private int _phaseTwoPressIx;
-    private int[][] _toPress = new int[4][]
+    private readonly int[][] _toPress = new int[4][]
     {
         new int[4]{4, 4, 4, 4},
         new int[4]{4, 4, 4, 4},
@@ -103,11 +102,44 @@ public class GhostScript : MonoBehaviour
         new int[4]{4, 4, 4, 4}
     };
     private int[] _phaseTwoPressOrder = new int[16];
-    private int[] _phaseThreePressOrder = new int[16];
+    private readonly int[] _phaseThreePressOrder = new int[16];
     private int _phaseThreePressIx;
     private int _spikeTarget;
     private bool _spikeActive;
-    private int[] _lazyArr = new int[] { 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15 };
+    private readonly int[] _lazyArr = new int[] { 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15 };
+
+    private GhostSettings Settings = new GhostSettings();
+
+    private class GhostSettings
+    {
+        public bool DisableMusic = false;
+    }
+
+#pragma warning disable 0414
+    private static readonly Dictionary<string, object>[] TweaksEditorSettings = new Dictionary<string, object>[]
+#pragma warning restore 0414
+    {
+        new Dictionary<string, object>
+        {
+            { "Filename", "GhostSettings.json" },
+            { "Name", "Ghost Settings" },
+            { "Listings", new List<Dictionary<string, object>>{
+                new Dictionary<string, object>
+                {
+                    { "Key", "disableMusic" },
+                    { "Text", "Disable Music" },
+                    { "Description", "Disables the custom music normally played by the module." }
+                },
+            } }
+        }
+    };
+
+    private void Awake()
+    {
+        ModConfig<GhostSettings> modConfig = new ModConfig<GhostSettings>("GhostSettings");
+        Settings = modConfig.Settings;
+        modConfig.Settings = Settings;
+    }
 
     private void Start()
     {
@@ -227,8 +259,7 @@ public class GhostScript : MonoBehaviour
 
     private void Activate()
     {
-        var isTherePow = BombInfo.GetModuleNames().ToArray().Contains("Pow"); // Give music priority to Pow in case both a Ghost and Pow appear on a bomb.
-        if (_ghostId == 1 && !isTherePow)
+        if (_ghostId == 1 && !Settings.DisableMusic && BombInfo.GetModuleNames().ToArray().Contains("Pow"))
         {
             GhostMusic.Play();
             try { GameMusicControl.GameMusicVolume = 0.0f; }
@@ -243,6 +274,8 @@ public class GhostScript : MonoBehaviour
             else
                 _twitchMode = false;
         }
+        var time = (!_twitchMode ? 180f : 300f);
+        StartCoroutine(StartupTimer(time));
     }
 
     private void OnDestroy()
@@ -573,6 +606,19 @@ public class GhostScript : MonoBehaviour
         }
     }
 
+    private IEnumerator StartupTimer(float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            yield return null;
+            elapsed += Time.deltaTime;
+        }
+        _canAttack = true;
+        yield break;
+        
+    }
+
     private IEnumerator AttackHandler()
     {
         while (!_moduleSolved)
@@ -654,6 +700,10 @@ public class GhostScript : MonoBehaviour
         return closest != null ? closest.Find("MultiDeckerUI").Find("IDText").GetComponent<UnityEngine.UI.Text>().text : null;
     }
 
+#pragma warning disable 0649
+    private readonly bool TwitchPlaysActive;
+#pragma warning restore 0649
+
 #pragma warning disable 414
     private readonly string TwitchHelpMessage = "LEDs: !{0} led 1-3 [Presses LED 1-3]\nPhase 1: !{0} press at xx yy [Press when the timer's seconds digits are xx and yy.]\nPhase 2: !{0} press A B C D [Press blobs A B C D.]\nPhase 3: !{0} press A1 B2 C3 D4 [Press blobs A1, B2, C3, D4.]";
 #pragma warning restore 414
@@ -668,7 +718,7 @@ public class GhostScript : MonoBehaviour
                 yield return "sendtochaterror Too many parameters!";
             else if (parameters.Length == 2)
             {
-                int temp = 0;
+                int temp;
                 if (int.TryParse(parameters[1], out temp))
                 {
                     if (temp < 1 || temp > 3)
@@ -691,12 +741,20 @@ public class GhostScript : MonoBehaviour
             yield return null;
             if (_currentPhase == 0)
             {
+                if (parameters.Length == 1)
+                {
+                    yield return null;
+                    yield return "multiple strikes";
+                    GhostLargeSel.OnInteract();
+                    yield return "end multiple strikes";
+                    yield break;
+                }
                 if (Regex.IsMatch(parameters[1], @"^\s*at\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
                 {
                     var pressList = new List<int>();
                     for (int i = 2; i < parameters.Length; i++)
                     {
-                        int temp = 0;
+                        int temp;
                         if (!int.TryParse(parameters[i], out temp))
                         {
                             yield return "sendtochaterror The given time to press '" + parameters[i] + "' is invalid!";
@@ -714,6 +772,7 @@ public class GhostScript : MonoBehaviour
                             yield break;
                         }
                     }
+                    yield return null;
                     yield return "multiple strikes";
                     while (pressList.Count > 0)
                     {
@@ -757,6 +816,7 @@ public class GhostScript : MonoBehaviour
                     yield return "sendtochaterror More than 16 presses were given!";
                     yield break;
                 }
+                yield return null;
                 yield return "multiple strikes";
                 for (int i = 0; i < pressList.Count; i++)
                 {
@@ -793,6 +853,7 @@ public class GhostScript : MonoBehaviour
                     yield return "sendtochaterror You have a duplicate press! Command ignored.";
                     yield break;
                 }
+                yield return null;
                 yield return "multiple strikes";
                 for (int i = 0; i < pressList.Count; i++)
                 {
