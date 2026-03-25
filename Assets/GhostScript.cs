@@ -259,7 +259,7 @@ public class GhostScript : MonoBehaviour
 
     private void Activate()
     {
-        if (_ghostId == 1 && !Settings.DisableMusic && BombInfo.GetModuleNames().ToArray().Contains("Pow"))
+        if (_ghostId == 1 && !Settings.DisableMusic && !BombInfo.GetModuleNames().ToArray().Contains("Pow"))
         {
             GhostMusic.Play();
             try { GameMusicControl.GameMusicVolume = 0.0f; }
